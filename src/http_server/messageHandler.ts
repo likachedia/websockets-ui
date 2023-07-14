@@ -1,5 +1,6 @@
-import { Game, Player, WsRequest } from "./constants/models";
+import { Game, Player, Ships, WsRequest } from "./constants/models";
 import { addPlayer, getDb, addRoom, db } from "../db/db";
+import { shipCoordinates, addCoordinatesToShip, calculateResult} from "../utils"
 
 // const db = getDb();
 
@@ -57,6 +58,7 @@ export const addPlayerToRoom = (player: Omit<Player, 'password'>) => {
     emptyRooms[0] = {...emptyRooms[0], roomUsers: [player]};
    const index = db.rooms.findIndex(room => room.indexRoom == emptyRooms[0].indexRoom);
     db.rooms[index] = emptyRooms[0];
+    console.log()
 }
 
 export const addSecondPlayer = (m, clientId: number) => {
@@ -64,7 +66,8 @@ export const addSecondPlayer = (m, clientId: number) => {
     const player = db.players.filter(player => player.index == clientId);
     const roomsWithOnePlayer = db.rooms.filter(room => room.indexRoom == message.indexRoom);
     // db.rooms.filter(room => room.indexRoom == m.indexRoom)[0].roomUsers.push()
-    roomsWithOnePlayer[0] = {...roomsWithOnePlayer[0], roomUsers: [...player]};
+    const userInRoom = roomsWithOnePlayer[0].roomUsers;
+    roomsWithOnePlayer[0] = {...roomsWithOnePlayer[0], roomUsers: [...userInRoom, player[0]]};
     console.log(db, 'fr');
     const roomsToUpdate = db.rooms.findIndex(room => room.indexRoom == message.indexRoom);
     db.rooms[roomsToUpdate] = roomsWithOnePlayer[0];
@@ -105,9 +108,10 @@ export const createGame = (m, clientId: number) => {
     // const gameIndex = db.rooms.filter(room => room.)
     const roomForGame = db.rooms[room];
     const player1 = roomForGame.roomUsers[0].index;
+    console.log(roomForGame.roomUsers)
     const player2 = roomForGame.roomUsers[1].index;
     // const enemyId = db.rooms.filter(room => room.indexRoom == m.indexRoom)?.[0].roomUsers.filter(user => user.index != clientId)[0].index
-    const newGame: Game = { idGame: db.games.length, idPlayer1: player1, idPlayer2: player2};
+    const newGame: Game = { idGame: db.games.length, idPlayer1: {id: player1} , idPlayer2: {id: player2}};
     db.games = [...db.games, newGame];
     const dataToReturn = {
         idGame: newGame.idGame,
@@ -123,4 +127,30 @@ export const removeRoom = (m) => {
     const message = JSON.parse(m);
     db.rooms.splice(message.indexRoom, 1);
     return updateRoom();
+}
+
+export const addShips = (m, clientId: number) => {
+    const {gameId, ships, indexPlayer} = JSON.parse(m);
+    // console.log(typeof ships)
+    // const parsedShips: Ships[] = JSON.parse(ships);
+    const shipsWithCoordinates = addCoordinatesToShip(ships);
+    const gameIndex = db.games.findIndex(game => game.idGame == gameId);
+
+    db.games[gameIndex].idPlayer1.id == clientId ? db.games[gameIndex].idPlayer1.ships = shipsWithCoordinates : db.games[gameIndex].idPlayer2.ships = shipsWithCoordinates;
+   
+    if(db.games[gameIndex].idPlayer1.ships && db.games[gameIndex].idPlayer2.ships) {
+        return db.games[gameIndex];
+    }
+}
+
+export const startGame = (gameId: number) => {
+    const index = db.games.findIndex(game => game.idGame == gameId);
+    if(index !== -1) {
+        return db.games[index];
+    }
+}
+
+export const attack = (m, clientId: number) => {
+    const {gameId, x, y, indexPlayer} = JSON.parse(m);
+//    const result =  calculateResult()
 }

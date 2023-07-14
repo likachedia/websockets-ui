@@ -1,7 +1,7 @@
 import { server } from "./src/http_server/index";
 import { WebSocketServer } from 'ws';
 // import { handleMessage } from './src/http_server/messageHandler';
-import { messageParser } from './src/utils';
+import { messageParser, buildData } from './src/utils';
 import { WsRequest } from "./src/http_server/constants/models";
 import * as handler from './src/http_server/messageHandler';
 
@@ -44,7 +44,7 @@ wss.on('connection', function connection(ws, request, client) {
       // ws.send(JSON.stringify(res));
       clients.forEach(client => {
         const res = handler.updateRoom();
-          client.send(JSON.stringify(res));     
+          client.send(JSON.stringify(res));   
       })
     }
     if(type == WsRequest.add_user_to_room){
@@ -57,6 +57,19 @@ wss.on('connection', function connection(ws, request, client) {
         const res = handler.removeRoom(m);
           client.send(JSON.stringify(res)); 
       })
+    }
+    if(type == WsRequest.add_ships) {
+      const res = handler.addShips(m, clientId);
+      if(res) {
+        const data1 = buildData(res.idPlayer1.id, res);
+        const data2 = buildData(res.idPlayer2.id, res);
+        clients.get(res.idPlayer1.id).send(JSON.stringify(data1));
+        clients.get(res.idPlayer2.id).send(JSON.stringify(data2));
+      }
+    }
+
+    if(type == WsRequest.attack) {
+        handler.attack(m, clientId)
     }
 
     // if(res && res.type == "update_room") {

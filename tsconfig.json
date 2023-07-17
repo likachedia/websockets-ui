@@ -1,7 +1,6 @@
 {
     "compilerOptions": {
       "target": "ES6",                          
-      // "module": "ES2015",              
       "lib": ["es6"],                     
       "allowJs": true,
       "outDir": "build",                      
@@ -10,8 +9,10 @@
       "noImplicitAny": false,
       "esModuleInterop": true,
       "resolveJsonModule": true,
-      "moduleResolution": "node",  
+      "moduleResolution": "node",
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*.ts"],
     "exclude": ["node_modules", "build/**/*"]
 }

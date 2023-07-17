@@ -1,4 +1,4 @@
-import { Coordinates, Game, Response, Ships, Status } from "./http_server/constants/models";
+import { Coordinates, Game, Response, Ships, Status } from "./constants/models";
 
 export const messageParser = (message: string) => {
     const {type, data } = JSON.parse(message);
@@ -58,7 +58,6 @@ export const calculateResult = (ships: Ships[], attack: {x: number, y: number}):
     ships.forEach(ship => {
         let shot: boolean = false;
         ship.coordinates?.forEach(coordinate => {
-            console.log(coordinate, attack, ship)
             if((coordinate.x == attack.x) && (coordinate.y == attack.y)) { 
                 if(coordinate.shot) {
                     status = Status.ilegal_move;
@@ -79,14 +78,12 @@ export const calculateResult = (ships: Ships[], attack: {x: number, y: number}):
         }
 
         if(shot && (ship.length == ship.shot)) {
-            console.log('killed')
             ship.kill = true;
             status =  Status.killed;
             return;
         }
         
         if(shot){
-            console.log('shot')
             status = Status.shot;
             return
         }
@@ -109,4 +106,13 @@ export const createGameData = (idPlayer: number, idGame: number): string => {
 
 export const isResponse = (obj: Response): obj is Response =>  {
     return 'type' in obj;
-  }
+}
+
+export const generateRandomCoordinates = () => {
+   const  x =  Math.floor(Math.random() * 10);
+   const y = Math.floor(Math.random() * 10);
+   return {
+    x, 
+    y,
+   }
+}

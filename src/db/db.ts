@@ -1,14 +1,21 @@
-import { DB, Player } from "../http_server/constants/models";
+import { DB, Player } from "../constants/models";
 
 export const db: DB = {
     players: [],
     games: [],
     rooms: [],
-    winners: []
+    winners: [],
+    attacks: [],
 }
 
 export const addPlayer = (newPlayer: Player) => {
-    db.players = [...db.players, newPlayer];
+    if(db.players.find(player => player.name == newPlayer.name)){
+        return true;
+    } else {
+        db.players = [...db.players, newPlayer];
+        return false;
+    }
+    
 }
 
 export const addRoom = (room) => {

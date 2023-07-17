@@ -2,7 +2,8 @@ export type DB = {
     players: Player[],
     rooms: Room[],
     games: Game[],
-    winners: WinnersTable[]
+    winners: WinnersTable[],
+    attacks: Attack[],
 }
 
 export type Player = {
@@ -60,6 +61,13 @@ export type Response = {
     data: string,
     id: number,
 }
+
+export type Attack = {
+    x: number,
+    y: number,
+    idPlayer: number;
+}
+
 export enum WsRequest {
     reg = 'reg',
     create_room ='create_room',

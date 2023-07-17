@@ -5,6 +5,7 @@ import { WsRequest } from "../src/constants/models";
 import * as handler from '../src/http_server/messageHandler';
 
 export const handleMessage = (type:WsRequest, m, clientId: number, clients: Map<number, WebSocket>, ws: WebSocket) => {
+    try{
     if(type == WsRequest.reg){
         const res = handler.registerPlayer(m, clientId);
         ws.send(JSON.stringify(res));
@@ -75,5 +76,9 @@ export const handleMessage = (type:WsRequest, m, clientId: number, clients: Map<
           })
         }
       }
+    } catch {
+        console.error("Something went wrong")
+        ws.send(JSON.stringify("Something went wrong"));
+    }  
 }
 

@@ -35,10 +35,15 @@ wsServer.on('connection', function connection(ws:WebSocket, request:IncomingMess
   clients.forEach((client, key) => {
     client.on('close', (code:number)=> {
       console.log(`Connection end with code ${code}, client ${key} disconnected`);
-      clients.delete(key);
-      clearePlayerData(key);
-      const res = handler.updateRoom();
-      client.send(JSON.stringify(res))
+      try{
+        clients.delete(key);
+        clearePlayerData(key);
+        const res = handler.updateRoom();
+        client.send(JSON.stringify(res))
+      } catch {
+        console.error('Something went wrong');
+      }
+
     })
   })
 });

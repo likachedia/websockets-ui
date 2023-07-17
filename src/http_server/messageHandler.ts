@@ -1,34 +1,33 @@
-import { Game, Player, Ships, WsRequest } from "./constants/models";
+import { Game, Player, Status, Ships, WsRequest, Response } from "./constants/models";
 import { addPlayer, getDb, addRoom, db } from "../db/db";
 import { shipCoordinates, addCoordinatesToShip, calculateResult} from "../utils"
+import { json } from "stream/consumers";
 
 // const db = getDb();
 
-export const handleMessage = (message: string, clientId: number) => {
-    const {type, data } = JSON.parse(message);
-    const m = data ?? JSON.parse(data);
-    console.log(message, 'message');
-    console.log(data, m);
-    if(type === WsRequest.reg) {
-        return registerPlayer(m, clientId);
-    } else if (type === WsRequest.create_room) {
-        return createRoom(clientId);
-    } else if(type === WsRequest.add_user_to_room) {   
-        addSecondPlayer(m,clientId);
-        console.log(m, db);
-        const message = JSON.parse(m)
-        const room = db.rooms.filter(room => room.indexRoom == message.indexRoom);
-        console.log(room);
-        const enemyId = db.rooms.filter(room => room.indexRoom == message.indexRoom)?.[0].roomUsers[0].index;
-        return createGame(enemyId, clientId);
-    }
+// export const handleMessage = (message: string, clientId: number) => {
+//     const {type, data } = JSON.parse(message);
+//     const m = data ?? JSON.parse(data);
+//     console.log(message, 'message');
+//     console.log(data, m);
+//     if(type === WsRequest.reg) {
+//         return registerPlayer(m, clientId);
+//     } else if (type === WsRequest.create_room) {
+//         return createRoom(clientId);
+//     } else if(type === WsRequest.add_user_to_room) {   
+//         addSecondPlayer(m,clientId);
+//         console.log(m, db);
+//         const message = JSON.parse(m)
+//         const room = db.rooms.filter(room => room.indexRoom == message.indexRoom);
+//         console.log(room);
+//         const enemyId = db.rooms.filter(room => room.indexRoom == message.indexRoom)?.[0].roomUsers[0].index;
+//         return createGame(enemyId, clientId);
+//     }
 
-}
+// }
 
 export const registerPlayer = (m: string, clientId: number) => {
     const message = JSON.parse(m);
-    console.log(message)
-    console.log(typeof message)
     const player = {
         name: message.name,
         password: message.password,
@@ -38,10 +37,13 @@ export const registerPlayer = (m: string, clientId: number) => {
 
     const data = JSON.stringify({
         name: message.name,
-        index: db.players.length,
+        index: player.index,
         error: false,
         errorText: '',
     },)
+    db.players.forEach(player => {
+        console.log(player);
+    })
     return {
         type: "reg",
         data,
@@ -58,7 +60,6 @@ export const addPlayerToRoom = (player: Omit<Player, 'password'>) => {
     emptyRooms[0] = {...emptyRooms[0], roomUsers: [player]};
    const index = db.rooms.findIndex(room => room.indexRoom == emptyRooms[0].indexRoom);
     db.rooms[index] = emptyRooms[0];
-    console.log()
 }
 
 export const addSecondPlayer = (m, clientId: number) => {
@@ -68,7 +69,7 @@ export const addSecondPlayer = (m, clientId: number) => {
     // db.rooms.filter(room => room.indexRoom == m.indexRoom)[0].roomUsers.push()
     const userInRoom = roomsWithOnePlayer[0].roomUsers;
     roomsWithOnePlayer[0] = {...roomsWithOnePlayer[0], roomUsers: [...userInRoom, player[0]]};
-    console.log(db, 'fr');
+    // console.log(db, 'fr');
     const roomsToUpdate = db.rooms.findIndex(room => room.indexRoom == message.indexRoom);
     db.rooms[roomsToUpdate] = roomsWithOnePlayer[0];
     
@@ -104,24 +105,30 @@ export const createGame = (m, clientId: number) => {
     const message = JSON.parse(m);
     addSecondPlayer(m,clientId);
     const room = db.rooms.findIndex(room => room.indexRoom == message.indexRoom);
-    console.log(room);
+    // console.log(room);
     // const gameIndex = db.rooms.filter(room => room.)
     const roomForGame = db.rooms[room];
     const player1 = roomForGame.roomUsers[0].index;
-    console.log(roomForGame.roomUsers)
+    // console.log(roomForGame.roomUsers)
     const player2 = roomForGame.roomUsers[1].index;
     // const enemyId = db.rooms.filter(room => room.indexRoom == m.indexRoom)?.[0].roomUsers.filter(user => user.index != clientId)[0].index
-    const newGame: Game = { idGame: db.games.length, idPlayer1: {id: player1} , idPlayer2: {id: player2}};
+    const newGame: Game = { idGame: db.games.length, idPlayer1: {id: player1, kills: 0} , idPlayer2: {id: player2, kills: 0}, currentPlayer: player1, };
     db.games = [...db.games, newGame];
-    const dataToReturn = {
-        idGame: newGame.idGame,
-        idPlayer: clientId == player1 ? player1 : player2,
-    }
+    
+    // const dataToReturn = {
+    //     idGame: newGame.idGame,
+    //     idPlayer: clientId == player1 ? player1 : player2,
+    // }
     return {
-        type: "create_game",
-        data: JSON.stringify(dataToReturn),
-        id: 0,
+        idGame: newGame.idGame,
+        player1,
+        player2,
     }
+    // return {
+    //     type: "create_game",
+    //     data: JSON.stringify(dataToReturn),
+    //     id: 0,
+    // }
 }
 export const removeRoom = (m) => {
     const message = JSON.parse(m);
@@ -135,8 +142,8 @@ export const addShips = (m, clientId: number) => {
     // const parsedShips: Ships[] = JSON.parse(ships);
     const shipsWithCoordinates = addCoordinatesToShip(ships);
     const gameIndex = db.games.findIndex(game => game.idGame == gameId);
-
-    db.games[gameIndex].idPlayer1.id == clientId ? db.games[gameIndex].idPlayer1.ships = shipsWithCoordinates : db.games[gameIndex].idPlayer2.ships = shipsWithCoordinates;
+    // console.log(db.games[gameIndex], gameIndex)
+    db.games[gameIndex].idPlayer1.id == indexPlayer ? db.games[gameIndex].idPlayer1.ships = shipsWithCoordinates : db.games[gameIndex].idPlayer2.ships = shipsWithCoordinates;
    
     if(db.games[gameIndex].idPlayer1.ships && db.games[gameIndex].idPlayer2.ships) {
         return db.games[gameIndex];
@@ -150,7 +157,79 @@ export const startGame = (gameId: number) => {
     }
 }
 
-export const attack = (m, clientId: number) => {
-    const {gameId, x, y, indexPlayer} = JSON.parse(m);
-//    const result =  calculateResult()
+export const attack = (m, clientId: number): Status.ilegal_move | Response | undefined => {
+    const {gameId, x, y, indexPlayer} = JSON.parse(m); // attack
+    const positions = {x, y};
+    const game = db.games[gameId];
+
+    if(game.currentPlayer !== indexPlayer) {
+        return;
+    }
+
+    const currentPlayer = game.idPlayer1.id == indexPlayer ? game.idPlayer1 : game.idPlayer2;
+    const ships = game.idPlayer1.id == indexPlayer ? game.idPlayer2.ships : game.idPlayer1.ships
+    const result = calculateResult(ships!, positions);
+    // console.log(ships!.filter(ship => ship.shot))
+
+    if(result === Status.ilegal_move) {
+        return result;
+    }
+    
+    if(result === Status.miss) {
+        game.currentPlayer = game.idPlayer1.id == indexPlayer ? game.idPlayer2.id : game.idPlayer1.id
+    }
+
+    if(result === Status.killed) {
+        currentPlayer.kills++;
+
+        if(currentPlayer.kills === ships!.length) {
+            updateWinner(currentPlayer.id)
+            return {
+                type: "finish",
+                data: JSON.stringify( {
+                    winPlayer: currentPlayer.id,
+                }),
+                id: 0,
+            }
+        }
+    }
+
+    const data = {
+        position: { x, y },
+        currentPlayer: indexPlayer,
+        status: result,
+    }
+    return {
+        type: "attack",
+        data: JSON.stringify(data),
+        id: 0,
+    }
+
+}
+
+export const turn = (gameId: number) => {
+    const game = db.games.filter(game => game.idGame == gameId)[0];
+
+    return {
+        type: "turn",
+        data: JSON.stringify({
+            currentPlayer:  game.currentPlayer ??  game.idPlayer1.id
+        }),
+        id: 0,
+    }
+}
+
+export const updateWinner = (winnerId: number) => {
+    const winner = db.players.find(player => player.index == winnerId)?.name;
+    const existingWinner = db.winners.find(player => player.id == winnerId);
+    existingWinner ? existingWinner.wins++ : db.winners = [...db.winners, {id: winnerId, name: winner!, wins: 1}];
+}
+
+export const returnWinnersTable = () => {
+    const winners = db.winners;
+    return {
+        type: "update_winners",
+        data:JSON.stringify(winners),
+        id: 0,
+    }
 }

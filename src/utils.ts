@@ -1,4 +1,4 @@
-import { Coordinates, Game, Ships, Status } from "./http_server/constants/models";
+import { Coordinates, Game, Response, Ships, Status } from "./http_server/constants/models";
 
 export const messageParser = (message: string) => {
     const {type, data } = JSON.parse(message);
@@ -12,16 +12,15 @@ export const messageParser = (message: string) => {
 export const shipCoordinates = (length, position, direction) => {
     let array: Coordinates[] = []
     if(length == 1) {
-        // [{...position}]
         array = [{...position}]
     } else if(length > 1) {
         if(direction) {
             for(let i = 0; i < length; i++) {
-                array.push({x: position.x+i, y: position.y});
+                array.push({x: position.x, y: position.y+i});
             }
         } else {
             for(let i = 0; i < length; i++) {
-                array.push({x: position.x, y: position.y + i});
+                array.push({x: position.x+i, y: position.y });
             }
         }
         
@@ -43,7 +42,7 @@ export const addCoordinatesToShip = (ships: Ships[]): Ships[] => {
 }
 
 export const buildData = (playerId: number, game: Game) => {
-    const currentPlayerIndex = game.idPlayer1.id;
+    const currentPlayerIndex = playerId;
     const ships = game.idPlayer1.id == playerId ? game.idPlayer1.ships : game.idPlayer2.ships;
     const partialShips = ships?.map(ship => ({position: ship.position, direction: ship.direction, length: ship.length, type: ship.type}))
     const res = {
@@ -55,23 +54,59 @@ export const buildData = (playerId: number, game: Game) => {
 }
 
 export const calculateResult = (ships: Ships[], attack: {x: number, y: number}): Status => {
-    let shot: boolean;
-
+    let status: Status = Status.miss;
     ships.forEach(ship => {
+        let shot: boolean = false;
         ship.coordinates?.forEach(coordinate => {
-            if((coordinate.x == attack.x) && (coordinate.y == attack.y)) {
-                ship.shot ? ship.shot++ : ship.shot = 1;
+            console.log(coordinate, attack, ship)
+            if((coordinate.x == attack.x) && (coordinate.y == attack.y)) { 
+                if(coordinate.shot) {
+                    status = Status.ilegal_move;
+                    return;
+                }
+
+                if(!ship.kill) {
+                    ship.shot ? ship.shot++ : ship.shot = 1;
+                }
+                coordinate.shot = true;
                 shot = true;
+                return;
             }
         })
 
+        if(status === Status.ilegal_move) {
+            return;
+        }
+
         if(shot && (ship.length == ship.shot)) {
+            console.log('killed')
             ship.kill = true;
-            return Status.killed;
-        } else {
-            return Status.shot;
+            status =  Status.killed;
+            return;
+        }
+        
+        if(shot){
+            console.log('shot')
+            status = Status.shot;
+            return
         }
     })
 
-    return Status.miss;
+    return status;
 }
+
+
+export const createGameData = (idPlayer: number, idGame: number): string => {
+    return JSON.stringify({
+        type: "create_game",
+        data: JSON.stringify({
+          idGame,
+          idPlayer
+        }),
+        id: 0,
+      })
+}
+
+export const isResponse = (obj: Response): obj is Response =>  {
+    return 'type' in obj;
+  }

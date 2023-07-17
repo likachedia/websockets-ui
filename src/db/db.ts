@@ -4,6 +4,7 @@ export const db: DB = {
     players: [],
     games: [],
     rooms: [],
+    winners: []
 }
 
 export const addPlayer = (newPlayer: Player) => {

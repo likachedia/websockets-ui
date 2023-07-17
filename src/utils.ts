@@ -1,4 +1,5 @@
 import { Coordinates, Game, Response, Ships, Status } from "./constants/models";
+import { removePlayer } from "./db/db";
 
 export const messageParser = (message: string) => {
     const {type, data } = JSON.parse(message);
@@ -115,4 +116,8 @@ export const generateRandomCoordinates = () => {
     x, 
     y,
    }
+}
+
+export const clearePlayerData = (id: number) => {
+    removePlayer(id);
 }

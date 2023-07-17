@@ -215,7 +215,6 @@ export const returnWinnersTable = () => {
 
 export const randomAttack = (playerId: number) => {
   let attack = generateRandomCoordinates();
-  let resAttack;
   let iteration = 0;
   const playerAttacks = db.attacks.filter(
     (attack) => attack.idPlayer == playerId
